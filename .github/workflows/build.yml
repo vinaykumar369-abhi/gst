@@ -1,0 +1,30 @@
+name: Build GST Billing EXEon:push:tags:- 'v*' # Triggers build when you push a tag like v1.0, v1.1, etc.workflow_dispatch: # Allows you to run the build manually from the Actions tabjobs:build:runs-on: windows-lateststeps:
+- name: Checkout Code
+  uses: actions/checkout@v4
+
+- name: Set up Python
+  uses: actions/setup-python@v5
+  with:
+    python-version: '3.10'
+
+- name: Install Dependencies
+  run: |
+    python -m pip install --upgrade pip
+    pip install PyQt6 reportlab pyinstaller
+
+- name: Build with PyInstaller
+  run: |
+    # We use the same flags you tested locally to ensure consistency
+    pyinstaller --noconsole --onefile --name "GST_Billing_Pro" main.py
+
+- name: Create Release
+  id: create_release
+  uses: softprops/action-gh-release@v2
+  if: startsWith(github.ref, 'refs/tags/')
+  with:
+    files: dist/GST_Billing_Pro.exe
+    body: |
+      Automatic build of GST Billing Pro.
+      Download the .exe below and run it in a dedicated folder.
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
