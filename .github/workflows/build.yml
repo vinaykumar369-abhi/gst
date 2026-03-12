@@ -31,7 +31,8 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller --noconsole --onefile --name "GST_Billing_Pro" main.py
+          # The --collect-all flag ensures all PyQt6 DLLs and dependencies are included
+          pyinstaller --noconsole --onefile --collect-all PyQt6 --name "GST_Billing_Pro" main.py
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
