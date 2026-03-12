@@ -1,4 +1,4 @@
-name: Build GST Billing EXEon:push:tags:- 'v*' # Triggers build when you push a tag like v1.0, v1.1, etc.workflow_dispatch: # Allows you to run the build manually from the Actions tabjobs:build:runs-on: windows-lateststeps:
+name: Build GST Billing EXEon:push:branches:- main  # Now it triggers every time you push to the main branchtags:- 'v*'  # Also triggers on version tagsworkflow_dispatch: # Allows manual triggerpermissions:contents: write  # Crucial: This allows the action to create the release/exe filejobs:build:runs-on: windows-lateststeps:
 - name: Checkout Code
   uses: actions/checkout@v4
 
@@ -14,17 +14,19 @@ name: Build GST Billing EXEon:push:tags:- 'v*' # Triggers build when you push a 
 
 - name: Build with PyInstaller
   run: |
-    # We use the same flags you tested locally to ensure consistency
     pyinstaller --noconsole --onefile --name "GST_Billing_Pro" main.py
 
+- name: Upload Artifact
+  uses: actions/upload-artifact@v4
+  with:
+    name: GST_Billing_Windows_Exe
+    path: dist/GST_Billing_Pro.exe
+
 - name: Create Release
-  id: create_release
-  uses: softprops/action-gh-release@v2
   if: startsWith(github.ref, 'refs/tags/')
+  uses: softprops/action-gh-release@v2
   with:
     files: dist/GST_Billing_Pro.exe
-    body: |
-      Automatic build of GST Billing Pro.
-      Download the .exe below and run it in a dedicated folder.
+    body: "Automated Build of GST Billing Pro"
   env:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
