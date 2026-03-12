@@ -31,20 +31,27 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          # The --collect-all flag ensures all PyQt6 DLLs and dependencies are included
-          pyinstaller --noconsole --onefile --collect-all PyQt6 --name "GST_Billing_Pro" main.py
+          # Changed to --onedir for better stability with PyQt6 DLLs
+          # --collect-all ensures all sub-modules are included
+          pyinstaller --noconsole --onedir --collect-all PyQt6 --name "GST_Billing_Pro" main.py
+
+      - name: Archive Build Directory
+        shell: powershell
+        run: |
+          # Zip the entire dist folder so it's easy for customers to download
+          Compress-Archive -Path dist/GST_Billing_Pro/* -DestinationPath GST_Billing_Pro_Windows.zip
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GST_Billing_Windows_Exe
-          path: dist/GST_Billing_Pro.exe
+          name: GST_Billing_Windows_Bundle
+          path: GST_Billing_Pro_Windows.zip
 
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/GST_Billing_Pro.exe
-          body: "Automated Build of GST Billing Pro"
+          files: GST_Billing_Pro_Windows.zip
+          body: "Automated Build of GST Billing Pro (Stable Bundle)"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
