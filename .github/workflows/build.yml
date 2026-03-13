@@ -27,20 +27,16 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          # Installing pyqt6-plugins often resolves missing DLL issues in bundled EXEs
-          pip install PyQt6 PyQt6-Qt6 PyQt6-sip pyqt6-plugins reportlab pyinstaller
+          # Simplified dependencies to ensure a clean environment
+          pip install PyQt6 reportlab pyinstaller
 
       - name: Build with PyInstaller
         run: |
-          # We force the path to site-packages to ensure PyInstaller finds the correct DLLs
-          # --collect-all is maintained as it's the most thorough collection method
-          pyinstaller --noconsole --onedir \
-            --collect-all PyQt6 \
-            --hidden-import PyQt6.QtWidgets \
-            --hidden-import PyQt6.QtGui \
-            --hidden-import PyQt6.QtCore \
-            --paths ./.venv/Lib/site-packages \
-            --name "GST_Billing_Pro" main.py
+          # Using --collect-all is the most reliable way to bundle PyQt6 DLLs
+          # Removed the specific .venv path which was likely causing the 'exit code 1'
+          pyinstaller --noconsole --onedir --collect-all PyQt6 --name "GST_Billing_Pro" main.py
+        env:
+          QT_DEBUG_PLUGINS: 1
 
       - name: Archive Build Directory
         shell: powershell
