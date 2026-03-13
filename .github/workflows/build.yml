@@ -27,19 +27,31 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install PyQt6 reportlab pyinstaller
+          # Installing pyqt6-plugins often resolves missing DLL issues in bundled EXEs
+          pip install PyQt6 PyQt6-Qt6 PyQt6-sip pyqt6-plugins reportlab pyinstaller
 
       - name: Build with PyInstaller
         run: |
-          # Simplified to a single line to prevent line-break errors in Windows shell
-          # --collect-all PyQt6 is the most aggressive and reliable way to include all DLLs
-          pyinstaller --noconsole --onedir --collect-all PyQt6 --name "GST_Billing_Pro" main.py
+          # We force the path to site-packages to ensure PyInstaller finds the correct DLLs
+          # --collect-all is maintained as it's the most thorough collection method
+          pyinstaller --noconsole --onedir \
+            --collect-all PyQt6 \
+            --hidden-import PyQt6.QtWidgets \
+            --hidden-import PyQt6.QtGui \
+            --hidden-import PyQt6.QtCore \
+            --paths ./.venv/Lib/site-packages \
+            --name "GST_Billing_Pro" main.py
 
       - name: Archive Build Directory
         shell: powershell
         run: |
-          # Ensuring we grab the entire folder including all DLLs
-          Compress-Archive -Path dist/GST_Billing_Pro/* -DestinationPath GST_Billing_Pro_Windows.zip
+          if (Test-Path dist/GST_Billing_Pro) {
+            cd dist
+            Compress-Archive -Path GST_Billing_Pro -DestinationPath ../GST_Billing_Pro_Windows.zip
+          } else {
+            Write-Error "Build directory not found!"
+            exit 1
+          }
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -52,6 +64,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: GST_Billing_Pro_Windows.zip
-          body: "Automated Build of GST Billing Pro (Stable DLL Bundle)"
+          body: "Stable Release: Please extract the entire ZIP before running the EXE."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
