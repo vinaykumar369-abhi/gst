@@ -31,14 +31,19 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          # Changed to --onedir for better stability with PyQt6 DLLs
-          # --collect-all ensures all sub-modules are included
-          pyinstaller --noconsole --onedir --collect-all PyQt6 --name "GST_Billing_Pro" main.py
+          # We use --hidden-import to force include the specific modules failing in your screenshot
+          # We use --onedir for stability, but we'll zip it for you automatically
+          pyinstaller --noconsole --onedir \
+            --hidden-import PyQt6.QtWidgets \
+            --hidden-import PyQt6.QtGui \
+            --hidden-import PyQt6.QtCore \
+            --collect-submodules PyQt6 \
+            --name "GST_Billing_Pro" main.py
 
       - name: Archive Build Directory
         shell: powershell
         run: |
-          # Zip the entire dist folder so it's easy for customers to download
+          # Ensuring we grab the entire folder including all DLLs
           Compress-Archive -Path dist/GST_Billing_Pro/* -DestinationPath GST_Billing_Pro_Windows.zip
 
       - name: Upload Artifact
@@ -52,6 +57,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: GST_Billing_Pro_Windows.zip
-          body: "Automated Build of GST Billing Pro (Stable Bundle)"
+          body: "Automated Build of GST Billing Pro (DLL Fix Applied)"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
