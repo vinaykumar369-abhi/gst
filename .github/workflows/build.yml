@@ -27,27 +27,17 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          # We explicitly install PyQt6-Qt6 to ensure the actual DLL binaries are present
           pip install PyQt6 PyQt6-Qt6 reportlab pyinstaller
 
       - name: Build with PyInstaller
-        run: |
-          # 1. We use --collect-all PyQt6 for broad coverage
-          # 2. We use --hidden-import to ensure the specific module failing is forced in
-          # 3. We use --onedir for maximum stability with DLL paths
-          pyinstaller --noconsole --onedir \
-            --collect-all PyQt6 \
-            --hidden-import PyQt6.QtWidgets \
-            --hidden-import PyQt6.QtGui \
-            --hidden-import PyQt6.QtCore \
-            --name "GST_Billing_Pro" main.py
+        # We put the command on one single line to avoid any Windows shell parsing errors
+        run: pyinstaller --noconsole --onedir --collect-all PyQt6 --hidden-import PyQt6.QtWidgets --hidden-import PyQt6.QtGui --hidden-import PyQt6.QtCore --name "GST_Billing_Pro" main.py
 
       - name: Archive Build Directory
         shell: powershell
         run: |
           if (Test-Path dist/GST_Billing_Pro) {
-            # We compress the contents directly to avoid double-folder nesting
-            Compress-Archive -Path dist/GST_Billing_Pro/* -DestinationPath GST_Billing_Pro_Windows.zip
+            Compress-Archive -Path dist/GST_Billing_Pro -DestinationPath GST_Billing_Pro_Windows.zip -Force
           } else {
             Write-Error "Build directory not found!"
             exit 1
