@@ -27,23 +27,27 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          # Simplified dependencies to ensure a clean environment
-          pip install PyQt6 reportlab pyinstaller
+          # We explicitly install PyQt6-Qt6 to ensure the actual DLL binaries are present
+          pip install PyQt6 PyQt6-Qt6 reportlab pyinstaller
 
       - name: Build with PyInstaller
         run: |
-          # Using --collect-all is the most reliable way to bundle PyQt6 DLLs
-          # Removed the specific .venv path which was likely causing the 'exit code 1'
-          pyinstaller --noconsole --onedir --collect-all PyQt6 --name "GST_Billing_Pro" main.py
-        env:
-          QT_DEBUG_PLUGINS: 1
+          # 1. We use --collect-all PyQt6 for broad coverage
+          # 2. We use --hidden-import to ensure the specific module failing is forced in
+          # 3. We use --onedir for maximum stability with DLL paths
+          pyinstaller --noconsole --onedir \
+            --collect-all PyQt6 \
+            --hidden-import PyQt6.QtWidgets \
+            --hidden-import PyQt6.QtGui \
+            --hidden-import PyQt6.QtCore \
+            --name "GST_Billing_Pro" main.py
 
       - name: Archive Build Directory
         shell: powershell
         run: |
           if (Test-Path dist/GST_Billing_Pro) {
-            cd dist
-            Compress-Archive -Path GST_Billing_Pro -DestinationPath ../GST_Billing_Pro_Windows.zip
+            # We compress the contents directly to avoid double-folder nesting
+            Compress-Archive -Path dist/GST_Billing_Pro/* -DestinationPath GST_Billing_Pro_Windows.zip
           } else {
             Write-Error "Build directory not found!"
             exit 1
@@ -60,6 +64,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: GST_Billing_Pro_Windows.zip
-          body: "Stable Release: Please extract the entire ZIP before running the EXE."
+          body: "Stable Release: Extract the ZIP fully before running the EXE."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
