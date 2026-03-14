@@ -2,10 +2,7 @@ name: Build GST Billing EXE
 
 on:
   push:
-    branches:
-      - main
-    tags:
-      - 'v*'
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
@@ -27,33 +24,23 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install PyQt6 PyQt6-Qt6 reportlab pyinstaller
+          pip install PyQt6 reportlab pyinstaller PyQt6-Qt6
 
       - name: Build with PyInstaller
-        # We put the command on one single line to avoid any Windows shell parsing errors
-        run: pyinstaller --noconsole --onedir --collect-all PyQt6 --hidden-import PyQt6.QtWidgets --hidden-import PyQt6.QtGui --hidden-import PyQt6.QtCore --name "GST_Billing_Pro" main.py
+        # Added --collect-all for maximum robustness with DLLs
+        run: pyinstaller --noconsole --onedir --collect-all PyQt6 --name "GST_Billing_Lite" main.py
 
-      - name: Archive Build Directory
+      - name: Archive Build
         shell: powershell
         run: |
-          if (Test-Path dist/GST_Billing_Pro) {
-            Compress-Archive -Path dist/GST_Billing_Pro -DestinationPath GST_Billing_Pro_Windows.zip -Force
+          if (Test-Path dist/GST_Billing_Lite) {
+            Compress-Archive -Path dist/GST_Billing_Lite -DestinationPath GST_Billing_Simple_Windows.zip -Force
           } else {
-            Write-Error "Build directory not found!"
             exit 1
           }
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GST_Billing_Windows_Bundle
-          path: GST_Billing_Pro_Windows.zip
-
-      - name: Create Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: GST_Billing_Pro_Windows.zip
-          body: "Stable Release: Extract the ZIP fully before running the EXE."
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: GST_Billing_App
+          path: GST_Billing_Simple_Windows.zip
