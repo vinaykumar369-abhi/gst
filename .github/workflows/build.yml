@@ -42,7 +42,7 @@ jobs:
           name: GST_Billing_Windows
           path: GST_Billing_Windows.zip
 
-  # --- MACOS BUILD (STABLE FOLDER VERSION) ---
+  # --- MACOS BUILD (STABLE BUNDLE VERSION) ---
   build-macos:
     runs-on: macos-latest
     steps:
@@ -61,21 +61,25 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          # Switched to --onedir instead of --windowed for Mac stability
-          # This creates a folder that is much harder for macOS to "block"
-          pyinstaller --noconsole --onedir \
+          # We use --windowed to create a proper .app bundle again
+          # We add a bundle identifier which helps macOS track the app's identity
+          pyinstaller --noconsole --windowed \
             --collect-all PyQt6 \
             --hidden-import PyQt6.sip \
-            --name "GST_Billing_Mac_Folder" main.py
+            --bundle-identifier "com.simplegst.billing" \
+            --name "GST_Billing_Mac" main.py
 
-      - name: Fix Permissions and Archive
+      - name: Force Self-Sign and Archive
         run: |
-          # Ensure the binary inside the folder is executable
-          chmod +x dist/GST_Billing_Mac_Folder/GST_Billing_Mac_Folder
-          # Clear apple quarantine flags
-          xattr -cr dist/GST_Billing_Mac_Folder
+          # This command signs the app with an 'ad-hoc' signature on the runner
+          # It fixes the 'library load disallowed by system policy' error
+          codesign --force --deep --sign - dist/GST_Billing_Mac.app
+          
+          # Remove quarantine attributes
+          xattr -cr dist/GST_Billing_Mac.app
+          
           cd dist
-          zip -r ../GST_Billing_MacOS.zip GST_Billing_Mac_Folder
+          zip -ry ../GST_Billing_MacOS.zip GST_Billing_Mac.app
 
       - name: Upload MacOS Artifact
         uses: actions/upload-artifact@v4
