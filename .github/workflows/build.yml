@@ -42,7 +42,7 @@ jobs:
           name: GST_Billing_Windows
           path: GST_Billing_Windows.zip
 
-  # --- MACOS BUILD ---
+  # --- MACOS BUILD (STABLE FOLDER VERSION) ---
   build-macos:
     runs-on: macos-latest
     steps:
@@ -61,13 +61,21 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          # --windowed creates a .app bundle for macOS
-          pyinstaller --noconsole --windowed --collect-all PyQt6 --name "GST_Billing_Mac" main.py
+          # Switched to --onedir instead of --windowed for Mac stability
+          # This creates a folder that is much harder for macOS to "block"
+          pyinstaller --noconsole --onedir \
+            --collect-all PyQt6 \
+            --hidden-import PyQt6.sip \
+            --name "GST_Billing_Mac_Folder" main.py
 
-      - name: Archive Mac Build
+      - name: Fix Permissions and Archive
         run: |
+          # Ensure the binary inside the folder is executable
+          chmod +x dist/GST_Billing_Mac_Folder/GST_Billing_Mac_Folder
+          # Clear apple quarantine flags
+          xattr -cr dist/GST_Billing_Mac_Folder
           cd dist
-          zip -r ../GST_Billing_MacOS.zip GST_Billing_Mac.app
+          zip -r ../GST_Billing_MacOS.zip GST_Billing_Mac_Folder
 
       - name: Upload MacOS Artifact
         uses: actions/upload-artifact@v4
