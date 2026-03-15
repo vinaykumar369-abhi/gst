@@ -1,19 +1,16 @@
-name: Build GST Billing Multi-Platform
-
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
-
-permissions:
-  contents: write
+name: Build Executables
+on: [push] # Runs every time you push code to GitHub
 
 jobs:
-  # --- WINDOWS BUILD ---
-  build-windows:
-    runs-on: windows-latest
+  build:
+    strategy:
+      matrix:
+        # This tells GitHub to run on both Windows and Mac virtual machines
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -21,68 +18,16 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install PyQt6 reportlab pyinstaller PyQt6-Qt6
+          pip install pyinstaller
+          # Add other dependencies here, e.g., pip install requests
 
       - name: Build with PyInstaller
-        run: pyinstaller --noconsole --onedir --collect-all PyQt6 --name "GST_Billing_Lite" main.py
+        run: pyinstaller --onefile --windowed your_script.py
 
-      - name: Archive Build
-        shell: powershell
-        run: |
-          if (Test-Path dist/GST_Billing_Lite) {
-            Compress-Archive -Path dist/GST_Billing_Lite -DestinationPath GST_Billing_Windows.zip -Force
-          }
-
-      - name: Upload Windows Artifact
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: GST_Billing_Windows
-          path: GST_Billing_Windows.zip
-
-  # --- MACOS BUILD (STABLE BUNDLE VERSION) ---
-  build-macos:
-    runs-on: macos-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install PyQt6 reportlab pyinstaller
-
-      - name: Build with PyInstaller
-        run: |
-          # We use --windowed to create a proper .app bundle again
-          # We add a bundle identifier which helps macOS track the app's identity
-          pyinstaller --noconsole --windowed \
-            --collect-all PyQt6 \
-            --hidden-import PyQt6.sip \
-            --bundle-identifier "com.simplegst.billing" \
-            --name "GST_Billing_Mac" main.py
-
-      - name: Force Self-Sign and Archive
-        run: |
-          # This command signs the app with an 'ad-hoc' signature on the runner
-          # It fixes the 'library load disallowed by system policy' error
-          codesign --force --deep --sign - dist/GST_Billing_Mac.app
-          
-          # Remove quarantine attributes
-          xattr -cr dist/GST_Billing_Mac.app
-          
-          cd dist
-          zip -ry ../GST_Billing_MacOS.zip GST_Billing_Mac.app
-
-      - name: Upload MacOS Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: GST_Billing_Mac
-          path: GST_Billing_MacOS.zip
+          name: executable-${{ matrix.os }}
+          path: dist/
