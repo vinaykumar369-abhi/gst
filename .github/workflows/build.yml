@@ -1,33 +1,39 @@
-name: Build Executables
-on: [push] # Runs every time you push code to GitHub
+name: Build Desktop App
+on: [push]
 
 jobs:
   build:
-    strategy:
-      matrix:
-        # This tells GitHub to run on both Windows and Mac virtual machines
-        os: [windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
-
+    runs-on: windows-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          
+      - name: Install Dependencies
+        run: npm install
+        
+      - name: Build React App
+        run: npm run build
+        
+      - name: Setup Python (for packaging)
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-
-      - name: Install dependencies
-        run: |
-          pip install pyinstaller
-          # Add other dependencies here, e.g., pip install requests
-
-      - name: Build with PyInstaller
-        run: pyinstaller --onefile --windowed your_script.py
-
-      - name: Upload Artifacts
+          
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+        
+      - name: Create EXE
+        # We use a tool called 'nativefier' or similar, but for simplicity 
+        # let's assume you want to package a python wrapper or use a web-to-exe tool.
+        # This command packages the build folder into a simple runner.
+        run: pyinstaller --onefile --windowed --name "GST-Billing-Pro" src/App.jsx
+        
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: executable-${{ matrix.os }}
+          name: GST-Billing-Windows-EXE
           path: dist/
