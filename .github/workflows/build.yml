@@ -10,22 +10,19 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          # Bumping to 24 to clear the deprecation warning in your screenshot
-          node-version: 24 
+          node-version: 22 # Stable latest
           
       - name: Install Dependencies
         run: npm install
         
       - name: Build React App
-        # CI=false prevents the build from failing if there are minor CSS/JS warnings
+        # CI=false ensures warnings don't stop the build
         run: |
-          set CI=false
+          $env:CI="false"
           npm run build
         
       - name: Create Windows Executable
-        # nativefier creates the EXE from your 'build' folder
-        run: |
-          npx nativefier --name "GST-Billing-Pro" --platform "windows" "build/"
+        run: npx nativefier --name "GST-Billing-Pro" --platform "windows" "build/"
         
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
