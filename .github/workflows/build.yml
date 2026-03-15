@@ -10,7 +10,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20 # Updated to avoid the deprecation warning in your screenshot
           
       - name: Install Dependencies
         run: npm install
@@ -18,22 +18,15 @@ jobs:
       - name: Build React App
         run: npm run build
         
-      - name: Setup Python (for packaging)
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-          
-      - name: Install PyInstaller
-        run: pip install pyinstaller
-        
-      - name: Create EXE
-        # We use a tool called 'nativefier' or similar, but for simplicity 
-        # let's assume you want to package a python wrapper or use a web-to-exe tool.
-        # This command packages the build folder into a simple runner.
-        run: pyinstaller --onefile --windowed --name "GST-Billing-Pro" src/App.jsx
+      - name: Create Windows Executable
+        # We use 'npx nativefier' to wrap your built React app into a Windows EXE
+        # This is much more reliable than using PyInstaller for JavaScript code
+        run: |
+          npx nativefier --name "GST-Billing-Pro" --platform "windows" "build/"
         
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: GST-Billing-Windows-EXE
-          path: dist/
+          # Nativefier creates a folder with the EXE inside
+          path: ./*-win32-x64/
